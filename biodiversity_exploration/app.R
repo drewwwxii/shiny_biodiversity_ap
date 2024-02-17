@@ -1,8 +1,8 @@
 library(shiny)
 library(shinydashboard)
-library(leaflet)  # Add this line
+library(leaflet)  
 
-# Define UI
+#  UI
 ui <- dashboardPage(
   dashboardHeader(title = "Biodiversity Explorer"),
   dashboardSidebar(
@@ -78,9 +78,9 @@ ui <- dashboardPage(
               )
       ),
       
-      # Example Dataset Tab
+      # Example Morrea Tab
       tabItem(tabName = "example",
-              # Your example dataset widgets go here
+              # example dataset widgets go here
               fluidRow(
                 column(12, h3("Morrea LTER Data Here")),
                 tableOutput("example_table")
@@ -89,7 +89,7 @@ ui <- dashboardPage(
       
       # User Guidance Tab
       tabItem(tabName = "guidance",
-              # Your user guidance content goes here
+              # user guidance goes here
               fluidRow(
                 column(12, h3("User Guidance")),
                 p("This tab provides guidance on using the application.")
@@ -101,12 +101,7 @@ ui <- dashboardPage(
 
 # Define server logic
 server <- function(input, output) {
-  # Your server logic goes here
-  
-  # Placeholder outputs for demonstration
-  output$eda_plot <- renderPlot({
-    plot(1:10, main = "Placeholder EDA Plot")
-  })
+  # server logic goes here
   
   output$biodiversity_info <- renderText({
     "Placeholder Biodiversity Info"
@@ -121,7 +116,7 @@ server <- function(input, output) {
   })
   
   output$time_series_plot <- renderPlot({
-    plot(1:10, main = "Placeholder Time Series Plot")
+    plot(1:10, main = "Placeholder Time Series")
   })
   
   output$example_table <- renderTable({
@@ -129,5 +124,5 @@ server <- function(input, output) {
   })
 }
 
-# Run the application 
+# Run the app
 shinyApp(ui = ui, server = server)
