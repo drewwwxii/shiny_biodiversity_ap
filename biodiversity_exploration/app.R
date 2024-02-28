@@ -98,9 +98,6 @@ server <- function(input, output) {
     # Access the dataset using the reactive expression
     data <- dataset()
     
-    # Assuming your dataset contains a column named 'Taxonomy' and 'Count'
-    # You can adjust this based on your actual dataset structure
-    
     # Group the data by 'Taxonomy' and summarize to get total count for each species
     taxonomic_breakdown <- data %>%
       group_by(Taxonomy) %>%
@@ -118,8 +115,18 @@ server <- function(input, output) {
   # Time series analysis logic using the dataset
   output$time_series_plot <- renderPlot({
     dataset()  # Access the dataset using the reactive expression
-    # Perform time series analysis logic using the dataset
-    plot(1:10, main = "Placeholder Time Series")  # Placeholder logic for demonstration
+    data <- dataset()
+    
+    # Convert "Year" to numeric (if it's not already)
+    data$Year <- as.numeric(data$Year)
+    
+    # Count the number of unique species for each year
+    species_count <- aggregate(Taxonomy ~ Year, data = data, FUN = function(x) length(unique(x)))
+    
+    # Plot the species richness over time
+    plot(species_count$Year, species_count$Taxonomy, type = "l", 
+         xlab = "Year", ylab = "Species Richness",
+         main = "Species Richness Over Time")
   })
   
   # Display the example Morrea dataset within the "Example" tab
