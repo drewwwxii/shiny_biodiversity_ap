@@ -4,7 +4,7 @@ library(leaflet)
 library(here)
 library(dplyr)
 
-# UI
+# UI 
 ui <- dashboardPage(
   dashboardHeader(title = "Biodiversity Explorer"),
   dashboardSidebar(
@@ -60,6 +60,7 @@ ui <- dashboardPage(
       tabItem(tabName = "time_series", fluidRow(
         column(12, 
                h3("Time Series Analysis"),
+               actionButton("plot_button", "Plot Time Series"),  
                plotOutput("time_series_plot")
         )
       )),
@@ -79,21 +80,24 @@ ui <- dashboardPage(
   )
 )
 
-#Server logic
-server <- function(input, output) {
+# Server logic
+server <- function(input, output, session) {
   
-  # Define a reactive expression to load the dataset
+  # Define reactive expression to load the dataset
   dataset <- reactive({
     # Load the dataset specifically within the "example" tab
     read.csv(here::here("MCR_LTER_Annual_Fish_Survey_20230615.csv"))
   })
+  
+  # Reactive variable to track button (on/off)
+  plot_toggle <- reactiveVal(FALSE)
   
   # Biodiversity info logic
   output$biodiversity_info <- renderText({
     "Placeholder Biodiversity Info"
   })
   
-  # Taxonomic breakdown logic using the dataset
+  # Taxonomic breakdown using the dataset
   output$taxonomic_table <- renderDataTable({
     # Access the dataset using the reactive expression
     data <- dataset()
@@ -107,17 +111,18 @@ server <- function(input, output) {
     taxonomic_breakdown
   })
   
-  # Map logic
+  # Map 
   output$map <- renderLeaflet({
     leaflet() %>% addTiles() %>% setView(lng = -122.43, lat = 37.77, zoom = 12)
   })
   
-  # Time series analysis logic using the dataset
+  # Time series analysis using the dataset
   output$time_series_plot <- renderPlot({
-    dataset()  # Access the dataset using the reactive expression
-    data <- dataset()
+    req(plot_toggle())  # Wait for the button to be toggled on
     
-    # Convert "Year" to numeric (if it's not already)
+    data <- dataset()  # Access dataset with reactive expression
+    
+    # Convert year to numeric to make sure
     data$Year <- as.numeric(data$Year)
     
     # Count the number of unique species for each year
@@ -129,7 +134,13 @@ server <- function(input, output) {
          main = "Species Richness Over Time")
   })
   
-  # Display the example Morrea dataset within the "Example" tab
+  # Toggle button event handler
+  observeEvent(input$plot_button, {
+    # Toggle the state of the button
+    plot_toggle(!plot_toggle())
+  })
+  
+  # Display the example Moorea dataset within the "Example" tab
   output$example_table <- renderTable({
     # Display first few rows of the dataset
     head(dataset())
