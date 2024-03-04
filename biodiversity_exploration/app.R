@@ -38,7 +38,14 @@ ui <- dashboardPage(
       tabItem(tabName = "data_input", fluidRow(
         column(12, 
                h3("Data Input"),
-               fileInput("file", "Upload Data", accept = c(".csv", ".txt"))
+               fileInput("file", "Upload Data", accept = c(".csv", ".txt")),
+               actionButton("generate_taxonomic", "Generate Taxonomic Breakdown"),
+               actionButton("generate_shannon", "Calculate Shannon's Index"),
+               actionButton("generate_simpson", "Calculate Simpson's Index"),
+               actionButton("generate_berger_parker", "Calculate Berger-Parker Index"),
+               br(),
+               textOutput("uploaded_biodiversity_info"), # Display biodiversity info here
+               dataTableOutput("uploaded_taxonomic_table") # Display taxonomic breakdown here
         )
       )),
       # UI modification
@@ -89,7 +96,86 @@ ui <- dashboardPage(
   )
 )
 
+# Server logic
 server <- function(input, output, session) {
+  
+options(shiny.maxRequestSize = 20 * 1024^2) # Set maximum request size to 20 MB (20 * 1024^2 bytes)
+  
+  
+# Reactive expression to read the uploaded dataset
+uploaded_dataset <- reactive({
+  req(input$file)  # Require a file to be uploaded
+  
+  # Read the uploaded file
+  read.csv(input$file$datapath)
+})
+
+observeEvent(input$generate_shannon, {
+# Uploaded Shannon's Diversity Index calculation
+  output$uploaded_biodiversity_info <- renderText({
+    
+    uploaded_lter <- uploaded_dataset()
+    # Drop NA values in the count column
+    uploaded_lter <- uploaded_lter[!is.na(uploaded_lter$Count),]
+    # Summarize counts by species
+    uploaded_species_counts <- uploaded_lter %>%
+      group_by(Taxonomy) %>%
+      summarize(total_count = sum(Count))
+    # Shannon's diversity index directly from counts
+    uploaded_shannons_index <- diversity(uploaded_species_counts$total_count, index = "shannon")
+    paste("Shannon's diversity index:", uploaded_shannons_index)
+  })
+})
+  
+  observeEvent(input$generate_simpson, {
+# Uploaded Simpson's Diversity Index calculation
+    output$uploaded_biodiversity_info <- renderText({
+    uploaded_lter2 <- uploaded_dataset()
+    # Drop NA values in the count column
+    uploaded_lter2 <- uploaded_lter2[!is.na(uploaded_lter2$Count),]
+    # Summarize counts by species
+    uploaded_species_counts2 <- uploaded_lter2 %>%
+      group_by(Taxonomy) %>%
+      summarize(total_count = sum(Count))
+    # Simpson's diversity index directly from counts
+    uploaded_simpsons_index <- diversity(uploaded_species_counts2$total_count, index = "simpson")
+    # Print 
+    paste("Simpson's diversity index:", uploaded_simpsons_index)
+})
+  })
+  
+# Uploaded Berger-Parker index calculation
+  observeEvent(input$generate_berger_parker, {
+    output$uploaded_biodiversity_info <- renderText({
+    uploaded_lter3 <- uploaded_dataset()
+    # Drop NA values in the count column
+    uploaded_lter3 <- uploaded_lter3[!is.na(uploaded_lter3$Count),]
+    # Summarize counts by species
+    uploaded_species_counts3 <- uploaded_lter3 %>%
+      group_by(Taxonomy) %>%
+      summarize(total_count = sum(Count))
+    # Calculate Berger-Parker index
+    uploaded_berger_parker_index <- max(uploaded_species_counts3$total_count) / sum(uploaded_species_counts3$total_count)
+    paste("Berger-Parker index:", uploaded_berger_parker_index)
+  })
+  })
+
+# Taxonomic breakdown using the uploaded dataset
+observeEvent(input$generate_taxonomic, {
+output$uploaded_taxonomic_table <- renderDataTable({
+  req(uploaded_dataset())  # Ensure dataset is available
+  
+  data <- uploaded_dataset()  # Access the uploaded dataset
+  
+  # Group the data by 'Taxonomy' and summarize to get total count for each species
+  taxonomic_breakdown <- data %>%
+    group_by(Taxonomy) %>%
+    summarize(Total_Count = sum(Count))
+  
+  # Return the taxonomic breakdown data frame
+  taxonomic_breakdown
+})
+})
   
   # Define reactive expression to load the original dataset
   original_dataset <- reactive({
