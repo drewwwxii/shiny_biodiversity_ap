@@ -41,14 +41,14 @@ ui <- dashboardPage(
                fileInput("file", "Upload Data", accept = c(".csv", ".txt"))
         )
       )),
-      # Biodiversity Measures tab
+      # UI modification
       tabItem(tabName = "biodiversity", fluidRow(
         column(12, 
                h3("Biodiversity Measures"),
                fluidRow(
                  column(4, actionButton("shannon_button", "Calculate Shannon's Diversity Index")),
                  column(4, actionButton("simpson_button", "Calculate Simpson's Diversity Index")),
-                 column(4, actionButton("other_button", "Calculate Other Index"))  # Add more buttons as needed
+                 column(4, actionButton("berger_button", "Calculate Berger-Parker Index"))
                ),
                br(),
                textOutput("biodiversity_info")
@@ -91,30 +91,27 @@ ui <- dashboardPage(
 
 server <- function(input, output, session) {
   
-  # Define reactive expression to load the dataset
-  dataset <- reactive({
-    # Load the dataset specifically within the "example" tab
+  # Define reactive expression to load the original dataset
+  original_dataset <- reactive({
+    # Load the dataset
     read.csv(here::here("MCR_LTER_Annual_Fish_Survey_20230615.csv"))
   })
   
-  # Reactive variable to track button (on/off)
-  plot_toggle <- reactiveVal(FALSE)
   
   # Shannon's Diversity Index calculation
   observeEvent(input$shannon_button, {
     output$biodiversity_info <- renderText({
-      # Calculate Shannon's diversity index
-      # Read dataset
-      lter <- dataset()
+  
+      lter <- original_dataset()
       # Drop NA values in the count column
       lter <- lter[!is.na(lter$Count),]
       # Summarize counts by species
       species_counts <- lter %>%
         group_by(Taxonomy) %>%
         summarize(total_count = sum(Count))
-      # Calculate Shannon's diversity index directly from counts
+      # Shannon's diversity index directly from counts
       shannons_index <- diversity(species_counts$total_count, index = "shannon")
-      # Print Shannon's diversity index
+      # Print
       shannons_index
     })
   })
@@ -122,9 +119,7 @@ server <- function(input, output, session) {
   # Simpson's Diversity Index calculation
   observeEvent(input$simpson_button, {
     output$biodiversity_info <- renderText({
-      # Calculate Simpson's diversity index
-      # Read dataset
-      lter2 <- dataset()
+      lter2 <- original_dataset()
       # Drop NA values in the count column
       lter2 <- lter2[!is.na(lter2$Count),]
       # Summarize counts by species
@@ -133,17 +128,15 @@ server <- function(input, output, session) {
         summarize(total_count = sum(Count))
       # Calculate Simpson's diversity index directly from counts
       simpsons_index <- diversity(species_counts$total_count, index = "simpson")
-      # Print Simpson's diversity index
+      # Print 
       simpsons_index
     })
   })
   
-  # Other Biodiversity Index (Berger-Parker) calculation
-  observeEvent(input$other_button, {
+  # Berger-Parker index calculation
+  observeEvent(input$berger_button, {
     output$biodiversity_info <- renderText({
-      # Calculate Berger-Parker index
-      # Read dataset
-      lter3 <- dataset()
+      lter3 <- original_dataset()
       # Drop NA values in the count column
       lter3 <- lter3[!is.na(lter3$Count),]
       # Summarize counts by species
@@ -152,7 +145,7 @@ server <- function(input, output, session) {
         summarize(total_count = sum(Count))
       # Calculate Berger-Parker index directly from counts
       berger_parker_index <- max(species_counts$total_count) / sum(species_counts$total_count)
-      # Print Berger-Parker index
+      # Print 
       berger_parker_index
     })
   })
@@ -160,11 +153,11 @@ server <- function(input, output, session) {
   
   # Taxonomic breakdown using the dataset
   output$taxonomic_table <- renderDataTable({
-    # Access the dataset using the reactive expression
-    data <- dataset()
+    
+    tax_data <- original_dataset()
     
     # Group the data by 'Taxonomy' and summarize to get total count for each species
-    taxonomic_breakdown <- data %>%
+    taxonomic_breakdown <- tax_data %>%
       group_by(Taxonomy) %>%
       summarize(Total_Count = sum(Count))
     
@@ -174,20 +167,58 @@ server <- function(input, output, session) {
   
   # Map 
   output$map <- renderLeaflet({
-    leaflet() %>% addTiles() %>% setView(lng = -122.43, lat = 37.77, zoom = 12)
+    leaflet() %>%
+      # Set initial map view to Moorea, French Polynesia
+      setView(lng = -149.8366, lat = -17.5364, zoom = 11) %>%
+      addTiles() %>%
+      # Add marker for Moorea
+      addMarkers(lng = -149.8366, lat = -17.5364, popup = "Moorea, French Polynesia") %>%
+      # Add polygons for square transects
+      addPolygons(
+        lng = c(-149.67, -150.0, -150.0, -149.67, -149.67), # East to West
+        lat = c(-17.45, -17.45, -17.62, -17.62, -17.45), # South to North
+      ) %>%
+      addPolygons(
+        lng = c(-149.8455917, -149.829821, -149.829821, -149.8455917, -149.8455917), # East to West
+        lat = c(-17.47185366, -17.47185366, -17.48641792, -17.48641792, -17.47185366), # South to North
+      ) %>%
+      addPolygons(
+        lng = c(-149.8116849, -149.7961685, -149.7961685, -149.8116849, -149.8116849), # East to West
+        lat = c(-17.46576169, -17.46576169, -17.48131958, -17.48131958, -17.46576169), # South to North
+      ) %>%
+      addPolygons(
+        lng = c(-149.7708619, -149.7519968, -149.7519968, -149.7708619, -149.7708619), # East to West
+        lat = c(-17.50382025, -17.50382025, -17.52087158, -17.52087158, -17.50382025), # South to North
+      ) %>%
+      addPolygons(
+        lng = c(-149.7772857, -149.7566866, -149.7566866, -149.7772857, -149.7772857), # East to West
+        lat = c(-17.53305021, -17.53305021, -17.55064263, -17.55064263, -17.53305021), # South to North
+      ) %>%
+      addPolygons(
+        lng = c(-149.8869755, -149.8561009, -149.8561009, -149.8869755, -149.8869755), # East to West
+        lat = c(-17.56818162, -17.56818162, -17.59182383, -17.59182383, -17.56818162), # South to North
+      ) %>%
+      addPolygons(
+        lng = c(-149.934537, -149.9115336, -149.9115336, -149.934537, -149.934537), # East to West
+        lat = c(-17.50735955, -17.50735955, -17.52839766, -17.52839766, -17.50735955), # South to North
+      )
   })
   
   # Time series analysis using the dataset
+  
+  # Reactive variable to track button (on/off)
+  plot_toggle <- reactiveVal(FALSE)
+  
   output$time_series_plot <- renderPlot({
     req(plot_toggle())  # Wait for the button to be toggled on
     
-    data <- dataset()  # Access dataset with reactive expression
+    time_data <- original_dataset()  # Access dataset with reactive expression
     
     # Convert year to numeric to make sure
-    data$Year <- as.numeric(data$Year)
+    time_data$Year <- as.numeric(time_data$Year)
     
     # Count the number of unique species for each year
-    species_count <- aggregate(Taxonomy ~ Year, data = data, FUN = function(x) length(unique(x)))
+    species_count <- aggregate(Taxonomy ~ Year, data = time_data, FUN = function(x) length(unique(x)))
     
     # Plot the species richness over time
     plot(species_count$Year, species_count$Taxonomy, type = "l", 
@@ -195,16 +226,16 @@ server <- function(input, output, session) {
          main = "Species Richness Over Time")
   })
   
-  # Toggle button event handler
+  # Toggle button event 
   observeEvent(input$plot_button, {
     # Toggle the state of the button
     plot_toggle(!plot_toggle())
   })
   
-  # Display the example Moorea dataset within the "Example" tab
+  # Display the example Moorea dataset within the Example tab
   output$example_table <- renderTable({
-    # Display first few rows of the dataset
-    head(dataset())
+    # Display first few rows
+    head(original_dataset())
   })
 }
 
