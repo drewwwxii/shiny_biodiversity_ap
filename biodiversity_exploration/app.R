@@ -3,6 +3,8 @@ library(shinydashboard)
 library(leaflet)
 library(here)
 library(dplyr)
+library(vegan)
+
 
 # UI 
 ui <- dashboardPage(
@@ -39,9 +41,16 @@ ui <- dashboardPage(
                fileInput("file", "Upload Data", accept = c(".csv", ".txt"))
         )
       )),
+      # Biodiversity Measures tab
       tabItem(tabName = "biodiversity", fluidRow(
         column(12, 
                h3("Biodiversity Measures"),
+               fluidRow(
+                 column(4, actionButton("shannon_button", "Calculate Shannon's Diversity Index")),
+                 column(4, actionButton("simpson_button", "Calculate Simpson's Diversity Index")),
+                 column(4, actionButton("other_button", "Calculate Other Index"))  # Add more buttons as needed
+               ),
+               br(),
                textOutput("biodiversity_info")
         )
       )),
@@ -66,7 +75,7 @@ ui <- dashboardPage(
       )),
       tabItem(tabName = "example", fluidRow(
         column(12, 
-               h3("Moorea LTER Data Here"),
+               h3("Moorea LTER Data"),
                tableOutput("example_table")
         )
       )),
@@ -80,7 +89,6 @@ ui <- dashboardPage(
   )
 )
 
-# Server logic
 server <- function(input, output, session) {
   
   # Define reactive expression to load the dataset
@@ -92,10 +100,63 @@ server <- function(input, output, session) {
   # Reactive variable to track button (on/off)
   plot_toggle <- reactiveVal(FALSE)
   
-  # Biodiversity info logic
-  output$biodiversity_info <- renderText({
-    "Placeholder Biodiversity Info"
+  # Shannon's Diversity Index calculation
+  observeEvent(input$shannon_button, {
+    output$biodiversity_info <- renderText({
+      # Calculate Shannon's diversity index
+      # Read dataset
+      lter <- dataset()
+      # Drop NA values in the count column
+      lter <- lter[!is.na(lter$Count),]
+      # Summarize counts by species
+      species_counts <- lter %>%
+        group_by(Taxonomy) %>%
+        summarize(total_count = sum(Count))
+      # Calculate Shannon's diversity index directly from counts
+      shannons_index <- diversity(species_counts$total_count, index = "shannon")
+      # Print Shannon's diversity index
+      shannons_index
+    })
   })
+  
+  # Simpson's Diversity Index calculation
+  observeEvent(input$simpson_button, {
+    output$biodiversity_info <- renderText({
+      # Calculate Simpson's diversity index
+      # Read dataset
+      lter2 <- dataset()
+      # Drop NA values in the count column
+      lter2 <- lter2[!is.na(lter2$Count),]
+      # Summarize counts by species
+      species_counts <- lter2 %>%
+        group_by(Taxonomy) %>%
+        summarize(total_count = sum(Count))
+      # Calculate Simpson's diversity index directly from counts
+      simpsons_index <- diversity(species_counts$total_count, index = "simpson")
+      # Print Simpson's diversity index
+      simpsons_index
+    })
+  })
+  
+  # Other Biodiversity Index (Berger-Parker) calculation
+  observeEvent(input$other_button, {
+    output$biodiversity_info <- renderText({
+      # Calculate Berger-Parker index
+      # Read dataset
+      lter3 <- dataset()
+      # Drop NA values in the count column
+      lter3 <- lter3[!is.na(lter3$Count),]
+      # Summarize counts by species
+      species_counts <- lter3 %>%
+        group_by(Taxonomy) %>%
+        summarize(total_count = sum(Count))
+      # Calculate Berger-Parker index directly from counts
+      berger_parker_index <- max(species_counts$total_count) / sum(species_counts$total_count)
+      # Print Berger-Parker index
+      berger_parker_index
+    })
+  })
+  
   
   # Taxonomic breakdown using the dataset
   output$taxonomic_table <- renderDataTable({
