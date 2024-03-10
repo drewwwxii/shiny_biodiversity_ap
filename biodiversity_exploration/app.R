@@ -4,6 +4,7 @@ library(leaflet)
 library(here)
 library(dplyr)
 library(vegan)
+library(tidyverse)
 
 
 # UI 
@@ -38,20 +39,22 @@ ui <- dashboardPage(
       tabItem(tabName = "data_input", fluidRow(
         column(12, 
                h3("Data Input"),
+               helpText("Upload your biodiversity data file and perform various analyses."),
                fileInput("file", "Upload Data", accept = c(".csv", ".txt")),
                actionButton("generate_taxonomic", "Generate Taxonomic Breakdown"),
                actionButton("generate_shannon", "Calculate Shannon's Index"),
                actionButton("generate_simpson", "Calculate Simpson's Index"),
                actionButton("generate_berger_parker", "Calculate Berger-Parker Index"),
                br(),
-               textOutput("uploaded_biodiversity_info"), # Display biodiversity info here
-               dataTableOutput("uploaded_taxonomic_table") # Display taxonomic breakdown here
+               textOutput("uploaded_biodiversity_info"), # Display uploaded biodiversity info here
+               dataTableOutput("uploaded_taxonomic_table") # Display uploaded taxonomic breakdown here
         )
       )),
       # UI modification
       tabItem(tabName = "biodiversity", fluidRow(
         column(12, 
                h3("Biodiversity Measures"),
+               helpText("Calculate various biodiversity measures using the example data."),
                fluidRow(
                  column(4, actionButton("shannon_button", "Calculate Shannon's Diversity Index")),
                  column(4, actionButton("simpson_button", "Calculate Simpson's Diversity Index")),
@@ -64,18 +67,21 @@ ui <- dashboardPage(
       tabItem(tabName = "taxonomic", fluidRow(
         column(12, 
                h3("Taxonomic Breakdown"),
+               helpText("Generate a taxonomic breakdown table from the example dataset."),
                dataTableOutput("taxonomic_table")
         )
       )),
       tabItem(tabName = "map", fluidRow(
         column(12, 
                h3("Moorea LTER Site Map Here"),
+               helpText("A site map of the locations of the various sites that data was collected from."),
                leafletOutput("map")
         )
       )),
       tabItem(tabName = "time_series", fluidRow(
         column(12, 
                h3("Time Series Analysis"),
+               helpText("Generate a time series analysis of species richness over time from the example dataset."),
                actionButton("plot_button", "Plot Time Series"),  
                plotOutput("time_series_plot")
         )
@@ -83,6 +89,7 @@ ui <- dashboardPage(
       tabItem(tabName = "example", fluidRow(
         column(12, 
                h3("Moorea LTER Data"),
+               helpText("A preview of what the example dataset contains."), 
                tableOutput("example_table")
         )
       )),
@@ -99,7 +106,7 @@ ui <- dashboardPage(
 # Server logic
 server <- function(input, output, session) {
   
-options(shiny.maxRequestSize = 20 * 1024^2) # Set maximum request size to 20 MB (20 * 1024^2 bytes)
+options(shiny.maxRequestSize = 20 * 1024^2) # Set maximum request size to 20 MB 
   
   
 # Reactive expression to read the uploaded dataset
@@ -307,9 +314,10 @@ output$uploaded_taxonomic_table <- renderDataTable({
     species_count <- aggregate(Taxonomy ~ Year, data = time_data, FUN = function(x) length(unique(x)))
     
     # Plot the species richness over time
-    plot(species_count$Year, species_count$Taxonomy, type = "l", 
-         xlab = "Year", ylab = "Species Richness",
-         main = "Species Richness Over Time")
+    ggplot(species_count, aes(x = Year, y = Taxonomy)) +
+      geom_line() + # Add line plot
+      labs(x = "Year", y = "Species Richness", caption = "Figure 1: Species richness over time") +
+      theme_minimal()
   })
   
   # Toggle button event 
