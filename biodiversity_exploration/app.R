@@ -65,6 +65,7 @@ ui <- dashboardPage(
         column(12, 
                h3("Taxonomic Breakdown"),
                helpText("Generate a taxonomic breakdown table from the example dataset."),
+               checkboxGroupInput("site_selector", "Select Sites", choices = NULL),
                dataTableOutput("taxonomic_table")
         )
       )),
@@ -172,12 +173,12 @@ output$uploaded_taxonomic_table <- renderDataTable({
   data <- uploaded_dataset()  # Access the uploaded dataset
   
   # Group the data by 'Taxonomy' and summarize to get total count for each species
-  taxonomic_breakdown <- data %>%
+  uploaded_taxonomic_breakdown <- data %>%
     group_by(Taxonomy) %>%
     summarize(Total_Count = sum(Count))
   
   # Return the taxonomic breakdown data frame
-  taxonomic_breakdown
+  uploaded_taxonomic_breakdown
 })
 })
   
@@ -227,15 +228,29 @@ output$uploaded_taxonomic_table <- renderDataTable({
       biodiversity_data
     })
   })
-
   
+  observe({
+    # Get unique site names from the original dataset and remove NA values
+    site_choices <- na.omit(unique(original_dataset()$Site))
+    
+    # Update checkbox input choices
+    updateCheckboxGroupInput(session, "site_selector", choices = site_choices)
+  })
   
-  # Taxonomic breakdown using the dataset
   output$taxonomic_table <- renderDataTable({
     
     tax_data <- original_dataset()
     
-    # Group the data by 'Taxonomy' and summarize to get total count for each species
+    # Filter the data based on selected sites
+    chosen_sites <- input$site_selector
+    if (!is.null(chosen_sites) && length(chosen_sites) > 0) {
+      tax_data <- tax_data %>% filter(Site %in% chosen_sites)
+    } else {
+      # If no sites are selected, don't filter the data
+      tax_data <- tax_data
+    }
+    
+    # Group the filtered data by 'Taxonomy' and summarize to get total count for each species
     taxonomic_breakdown <- tax_data %>%
       group_by(Taxonomy) %>%
       summarize(Total_Count = sum(Count))
@@ -243,6 +258,7 @@ output$uploaded_taxonomic_table <- renderDataTable({
     # Return the taxonomic breakdown data frame
     taxonomic_breakdown
   })
+ 
   
   # Map 
   output$map <- renderLeaflet({
