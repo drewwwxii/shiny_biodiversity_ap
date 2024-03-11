@@ -79,8 +79,10 @@ ui <- dashboardPage(
       tabItem(tabName = "time_series", fluidRow(
         column(12, 
                h3("Time Series Analysis"),
-               helpText("Generate a time series analysis of species richness over time from the example dataset."),
-               actionButton("plot_button", "Plot Time Series"),  
+               helpText("Select the time series to plot."),
+               selectInput("time_series_type", "Time Series:", 
+                           choices = c("Species Richness", "Shannon's Diversity Index", "Simpson's Diversity Index", "Berger-Parker Index"),
+                           selected = "Species Richness"),
                plotOutput("time_series_plot")
         )
       )),
@@ -299,34 +301,118 @@ output$uploaded_taxonomic_table <- renderDataTable({
       )
   })
   
-  # Time series analysis using the dataset
-  
-  # Reactive variable to track button (on/off)
-  plot_toggle <- reactiveVal(FALSE)
-  
-  output$time_series_plot <- renderPlot({
-    req(plot_toggle())  # Wait for the button to be toggled on
+  # Define reactive expression for time series analysis
+  time_series <- reactive({
+    # Access dataset with reactive expression
+    time_data <- original_dataset()
     
-    time_data <- original_dataset()  # Access dataset with reactive expression
-    
-    # Convert year to numeric to make sure
+    # Convert year to numeric to ensure correct plotting
     time_data$Year <- as.numeric(time_data$Year)
     
-    # Count the number of unique species for each year
+    # Aggregate species count by year
     species_count <- aggregate(Taxonomy ~ Year, data = time_data, FUN = function(x) length(unique(x)))
     
-    # Plot the species richness over time
-    ggplot(species_count, aes(x = Year, y = Taxonomy)) +
-      geom_line() + # Add line plot
-      labs(x = "Year", y = "Species Richness", caption = "Figure 1: Species richness over time") +
-      theme_minimal()
+    return(species_count)
   })
   
-  # Toggle button event 
-  observeEvent(input$plot_button, {
-    # Toggle the state of the button
-    plot_toggle(!plot_toggle())
+  # Define reactive expressions for calculating biodiversity indexes over time
+  shannons_time_series <- reactive({
+    # Aggregate species abundance data by year
+    species_counts <- original_dataset() %>%
+      group_by(Year, Taxonomy) %>%
+      summarize(Count = sum(Count)) %>%
+      ungroup()
+    
+    # Calculate Shannon's Diversity Index for each year
+    shannons_index <- species_counts %>%
+      group_by(Year) %>%
+      summarize(Shannon_Index = diversity(Count, index = "shannon"))
+    
+    return(shannons_index)
   })
+  
+  simpsons_time_series <- reactive({
+    # Aggregate species abundance data by year
+    species_counts <- original_dataset() %>%
+      group_by(Year, Taxonomy) %>%
+      summarize(Count = sum(Count)) %>%
+      ungroup()
+    
+    # Calculate Simpson's Diversity Index for each year
+    simpsons_index <- species_counts %>%
+      group_by(Year) %>%
+      summarize(Simpson_Index = diversity(Count, index = "simpson"))
+    
+    return(simpsons_index)
+  })
+  
+  berger_parker_time_series <- reactive({
+    # Aggregate species abundance data by year
+    species_counts <- original_dataset() %>%
+      group_by(Year, Taxonomy) %>%
+      summarize(Count = sum(Count)) %>%
+      ungroup()
+    
+    # Calculate Berger-Parker Index for each year
+    berger_parker_index <- species_counts %>%
+      group_by(Year) %>%
+      summarize(Berger_Parker_Index = max(Count) / sum(Count))
+    
+    return(berger_parker_index)
+  })
+  
+  # Render plots for biodiversity indexes over time
+  output$time_series_plot <- renderPlot({
+    # Get time series data
+    time_series_data <- time_series()
+    
+    # Filter out rows with missing values
+    time_series_data <- time_series_data[complete.cases(time_series_data), ]
+    
+    # Select the appropriate time series based on user input
+    if (input$time_series_type == "Species Richness") {
+      ggplot(time_series_data, aes(x = Year, y = Taxonomy)) +
+        geom_line() +
+        labs(x = "Year", y = "Species Richness", caption = "Figure 1: Species richness over time") +
+        theme_minimal()
+    } else if (input$time_series_type == "Shannon's Diversity Index") {
+      shannons_data <- shannons_time_series()
+      
+      # Filter out rows with missing values
+      shannons_data <- shannons_data[complete.cases(shannons_data), ]
+      
+      ggplot(shannons_data, aes(x = Year, y = Shannon_Index)) +
+        geom_line() +
+        labs(title = "Shannon's Diversity Index Over Time",
+             x = "Year",
+             y = "Shannon's Diversity Index")
+    } else if (input$time_series_type == "Simpson's Diversity Index") {
+      simpsons_data <- simpsons_time_series()
+      
+      # Filter out rows with missing values
+      simpsons_data <- simpsons_data[complete.cases(simpsons_data), ]
+      
+      ggplot(simpsons_data, aes(x = Year, y = Simpson_Index)) +
+        geom_line() +
+        labs(title = "Simpson's Diversity Index Over Time",
+             x = "Year",
+             y = "Simpson's Diversity Index")
+    } else if (input$time_series_type == "Berger-Parker Index") {
+      berger_parker_data <- berger_parker_time_series()
+      
+      # Filter out rows with missing values
+      berger_parker_data <- berger_parker_data[complete.cases(berger_parker_data), ]
+      
+      ggplot(berger_parker_data, aes(x = Year, y = Berger_Parker_Index)) +
+        geom_line() +
+        labs(title = "Berger-Parker Index Over Time",
+             x = "Year",
+             y = "Berger-Parker Index")
+    }
+  })
+  
+  
+  
   
   # Display the example Moorea dataset within the Example tab
   output$example_table <- renderTable({
