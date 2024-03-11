@@ -55,13 +55,10 @@ ui <- dashboardPage(
         column(12, 
                h3("Biodiversity Measures"),
                helpText("Calculate various biodiversity measures using the example data."),
-               fluidRow(
-                 column(4, actionButton("shannon_button", "Calculate Shannon's Diversity Index")),
-                 column(4, actionButton("simpson_button", "Calculate Simpson's Diversity Index")),
-                 column(4, actionButton("berger_button", "Calculate Berger-Parker Index"))
-               ),
+               checkboxGroupInput("site_selection", "Select Site(s):", choices = NULL),
+               actionButton("calculate_biodiversity", "Calculate Biodiversity Measures"),
                br(),
-               textOutput("biodiversity_info")
+               dataTableOutput("biodiversity_table")
         )
       )),
       tabItem(tabName = "taxonomic", fluidRow(
@@ -191,57 +188,46 @@ output$uploaded_taxonomic_table <- renderDataTable({
   })
   
   
-  # Shannon's Diversity Index calculation
-  observeEvent(input$shannon_button, {
-    output$biodiversity_info <- renderText({
+  observe({
+    # Filter out NA values from site choices
+    site_choices <- unique(original_dataset()$Site)
+    site_choices <- site_choices[!is.na(site_choices)]
+    updateCheckboxGroupInput(session, "site_selection", choices = site_choices)
+  })
   
+  observeEvent(input$calculate_biodiversity, {
+    output$biodiversity_table <- renderDataTable({
       lter <- original_dataset()
+      
+      # Filter the dataset based on selected site(s)
+      selected_sites <- input$site_selection
+      if (!is.null(selected_sites)) {
+        lter <- lter[lter$Site %in% selected_sites, ]
+      }
+      
       # Drop NA values in the count column
       lter <- lter[!is.na(lter$Count),]
       # Summarize counts by species
       species_counts <- lter %>%
         group_by(Taxonomy) %>%
         summarize(total_count = sum(Count))
-      # Shannon's diversity index directly from counts
+      
+      # Calculate all three biodiversity measures
       shannons_index <- diversity(species_counts$total_count, index = "shannon")
-      # Print
-      shannons_index
-    })
-  })
-  
-  # Simpson's Diversity Index calculation
-  observeEvent(input$simpson_button, {
-    output$biodiversity_info <- renderText({
-      lter2 <- original_dataset()
-      # Drop NA values in the count column
-      lter2 <- lter2[!is.na(lter2$Count),]
-      # Summarize counts by species
-      species_counts <- lter2 %>%
-        group_by(Taxonomy) %>%
-        summarize(total_count = sum(Count))
-      # Calculate Simpson's diversity index directly from counts
       simpsons_index <- diversity(species_counts$total_count, index = "simpson")
-      # Print 
-      simpsons_index
-    })
-  })
-  
-  # Berger-Parker index calculation
-  observeEvent(input$berger_button, {
-    output$biodiversity_info <- renderText({
-      lter3 <- original_dataset()
-      # Drop NA values in the count column
-      lter3 <- lter3[!is.na(lter3$Count),]
-      # Summarize counts by species
-      species_counts <- lter3 %>%
-        group_by(Taxonomy) %>%
-        summarize(total_count = sum(Count))
-      # Calculate Berger-Parker index directly from counts
       berger_parker_index <- max(species_counts$total_count) / sum(species_counts$total_count)
-      # Print 
-      berger_parker_index
+      
+      # Create a data frame to store the results
+      biodiversity_data <- data.frame(
+        Measure = c("Shannon's Diversity Index", "Simpson's Diversity Index", "Berger-Parker Index"),
+        Value = c(shannons_index, simpsons_index, berger_parker_index)
+      )
+      
+      # Return the data frame
+      biodiversity_data
     })
   })
+
   
   
   # Taxonomic breakdown using the dataset
