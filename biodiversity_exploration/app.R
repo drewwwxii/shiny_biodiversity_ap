@@ -28,13 +28,7 @@ ui <- dashboardPage(
               fluidRow(
                 column(12, 
                        h3("Welcome to Biodiversity Explorer!"),
-                       p("This application allows you to explore biodiversity data with various analysis tools."),
-                       p("The example dataset used here is the Moorrea Coral Reef LTER Fish data, collected by A. Brooks. The dataset is a part of the MCR LTER Coral Reef Long-term Population and Community Dynamics study, ongoing since 2005."),
-                       p("Reference: Moorea Coral Reef LTER and A. Brooks. 2023. MCR LTER: Coral Reef: Long-term Population and Community Dynamics: Fishes, ongoing since 2005 ver 62. Environmental Data Initiative. https://doi.org/10.6073/pasta/75644add7e7f90c568bf5045264d359a (Accessed 2024-02-17)."),
-                       p("The example dataset showcases the various functions of the app, including biodiversity measures such as Shannon's index and more."),
-                       p("It includes a time series analysis and a map visualization for the Moorea data, as well as taxonomic breakdown."),
-                       p("You can also upload your own biodiversity data, and the app will run biodiversity indices for you."),
-                       p("Additionally, you can perform a time series analysis on a given measure of your data.")
+                       verbatimTextOutput("home_text"),
                 ),
                 fluidRow(
                   column(12,
@@ -117,9 +111,7 @@ ui <- dashboardPage(
 # Server logic
 server <- function(input, output, session) {
   
-options(shiny.maxRequestSize = 20 * 1024^2) # Set maximum request size to 20 MB 
-  
-  # Define instructions for data upload
+  # Define upload instructions
   output$upload_instructions <- renderText({
     " Upload your own biodiversity data here to calculate Shannon's Index, Simpson's Index, Berger-Parker Index, a taxonomic table, and time series analyses. \n
     Please upload your biodiversity data file in CSV format. The file should have the following columns:\n
@@ -127,6 +119,21 @@ options(shiny.maxRequestSize = 20 * 1024^2) # Set maximum request size to 20 MB
   - 'Count': Contains the observations of the given species.\n
   - 'Year': Contains the year each observation was collected in.\n
   Ensure that the file contains no missing values in these columns."
+  })
+  
+options(shiny.maxRequestSize = 20 * 1024^2) # Set maximum request size to 20 MB 
+  
+  # Define home text
+  output$home_text <- renderText({
+ "This application allows you to explore biodiversity data with various analysis tools.\n
+  The example dataset used here is the Moorrea Coral Reef LTER Fish data, collected by A. Brooks. 
+  The dataset is a part of the MCR LTER Coral Reef Long-term Population and Community Dynamics study, ongoing since 2005. \n
+  Reference: Moorea Coral Reef LTER and A. Brooks. 2023. MCR LTER: Coral Reef: Long-term Population and Community Dynamics: Fishes, ongoing since 2005 ver 62. Environmental Data Initiative.
+  https://doi.org/10.6073/pasta/75644add7e7f90c568bf5045264d359a (Accessed 2024-02-17). \n
+  The example dataset showcases the various functions of the app, including biodiversity measures such as Shannon's index and more. \n
+  It includes a time series analysis and a map visualization for the Moorea data, as well as taxonomic breakdown. \n
+  You can also upload your own biodiversity data, and the app will run biodiversity indices for you.
+  Additionally, you can perform a time series analysis on a given measure of your data."
   })
   
 # Reactive expression to read the uploaded dataset
