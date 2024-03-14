@@ -39,8 +39,7 @@ ui <- dashboardPage(
       tabItem(tabName = "data_input", fluidRow(
         column(12, 
                h3("Data Input"),
-               verbatimTextOutput("upload_instructions"), # Display upload instructions here
-               helpText("Upload your biodiversity data file and perform various analyses."),
+               verbatimTextOutput("upload_instructions"), # Display instructions here
                fileInput("file", "Upload Data", accept = c(".csv", ".txt")),
                actionButton("generate_taxonomic", "Generate Taxonomic Breakdown"),
                actionButton("generate_shannon", "Calculate Shannon's Index"),
@@ -59,7 +58,7 @@ ui <- dashboardPage(
       tabItem(tabName = "biodiversity", fluidRow(
         column(12, 
                h3("Biodiversity Measures"),
-               helpText("Calculate various biodiversity measures using the example data."),
+               verbatimTextOutput("biodiversity_definitions"),
                checkboxGroupInput("site_selection", "Select Site(s):", choices = NULL),
                actionButton("calculate_biodiversity", "Calculate Biodiversity Measures"),
                br(),
@@ -69,7 +68,7 @@ ui <- dashboardPage(
       tabItem(tabName = "taxonomic", fluidRow(
         column(12, 
                h3("Taxonomic Breakdown"),
-               helpText("Generate a taxonomic breakdown table from the example dataset."),
+               helpText("Generate a taxonomic table from the example dataset."),
                checkboxGroupInput("site_selector", "Select Sites", choices = NULL),
                dataTableOutput("taxonomic_table")
         )
@@ -115,7 +114,8 @@ options(shiny.maxRequestSize = 20 * 1024^2) # Set maximum request size to 20 MB
   
   # Define instructions for data upload
   output$upload_instructions <- renderText({
-    "Please upload your biodiversity data file in CSV format. The file should have the following columns:\n
+    " Upload your own biodiversity data here to calculate Shannon's Index, Simpson's Index, Berger-Parker Index, a taxonomic table, and time series analyses. \n
+    Please upload your biodiversity data file in CSV format. The file should have the following columns:\n
   - 'Taxonomy': Contains the species name.\n
   - 'Count': Contains the observations of the given species.\n
   - 'Year': Contains the year each observation was collected in.\n
@@ -259,11 +259,16 @@ output$user_time_series_plot <- renderPlot({
   }
 })
 
+# Define instructions for data upload
+output$biodiversity_definitions <- renderText({
+  " Calculate various biodiversity measures using the example data. You can select any combination of sites. \n
+    Shannon's Diversity Index: a way to measure the diversity of species in a community. Denoted as H, this index is calculated as: H = -Σpi * ln(pi) \n
+    Simpson's Diversity Index: measures the probability that two individuals randomly selected from a sample will belong to the same species. 
+    Denoted as D, this index is calculated as: D = Σni(ni-1)  /  N(N-1) \n
+    Berger-Parker Index: It is simple measure of the numerical importance of the most abundant species.
+ d = Nmax / N where Nmax is the number of individuals in the most abundant species, and N is the total number of individuals in the sample. \n "
+})
 
-
-
-
-  
   # Define reactive expression to load the original dataset
   original_dataset <- reactive({
     # Load the dataset
@@ -386,7 +391,7 @@ output$user_time_series_plot <- renderPlot({
     # Access dataset with reactive expression
     time_data <- original_dataset()
     
-    # Convert year to numeric to ensure correct plotting
+    # Convert year to numeric 
     time_data$Year <- as.numeric(time_data$Year)
     
     # Aggregate species count by year
@@ -397,7 +402,7 @@ output$user_time_series_plot <- renderPlot({
   
   # Define reactive expressions for calculating biodiversity indexes over time
   shannons_time_series <- reactive({
-    # Aggregate species abundance data by year
+    # Aggregate species count by year
     species_counts <- original_dataset() %>%
       group_by(Year, Taxonomy) %>%
       summarize(Count = sum(Count)) %>%
