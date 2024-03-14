@@ -472,7 +472,7 @@ output$biodiversity_definitions <- renderText({
     if (input$time_series_type == "Species Richness") {
       ggplot(time_series_data, aes(x = Year, y = Taxonomy)) +
         geom_line() +
-        labs(x = "Year", y = "Species Richness", caption = "Figure 1: Species richness over time") +
+        labs(x = "Year", y = "Species Richness") +
         theme_minimal()
     } else if (input$time_series_type == "Shannon's Diversity Index") {
       shannons_data <- shannons_time_series()
