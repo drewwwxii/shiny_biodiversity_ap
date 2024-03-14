@@ -24,18 +24,25 @@ ui <- dashboardPage(
   ),
   dashboardBody(
     tabItems(
-      tabItem(tabName = "home", fluidRow(
-        column(12, 
-               h3("Welcome to Biodiversity Explorer!"),
-               p("This application allows you to explore biodiversity data with various analysis tools."),
-               p("The example dataset used here is the Moorrea Coral Reef LTER Fish data, collected by A. Brooks. The dataset is a part of the MCR LTER Coral Reef Long-term Population and Community Dynamics study, ongoing since 2005."),
-               p("Reference: Moorea Coral Reef LTER and A. Brooks. 2023. MCR LTER: Coral Reef: Long-term Population and Community Dynamics: Fishes, ongoing since 2005 ver 62. Environmental Data Initiative. https://doi.org/10.6073/pasta/75644add7e7f90c568bf5045264d359a (Accessed 2024-02-17)."),
-               p("The example dataset showcases the various functions of the app, including biodiversity measures such as Shannon's index and more."),
-               p("It includes a time series analysis and a map visualization for the Moorea data, as well as taxonomic breakdown."),
-               p("You can also upload your own biodiversity data, and the app will run biodiversity indices for you."),
-               p("Additionally, you can perform a time series analysis on a given measure of your data.")
-        )
-      )),
+      tabItem(tabName = "home", 
+              fluidRow(
+                column(12, 
+                       h3("Welcome to Biodiversity Explorer!"),
+                       p("This application allows you to explore biodiversity data with various analysis tools."),
+                       p("The example dataset used here is the Moorrea Coral Reef LTER Fish data, collected by A. Brooks. The dataset is a part of the MCR LTER Coral Reef Long-term Population and Community Dynamics study, ongoing since 2005."),
+                       p("Reference: Moorea Coral Reef LTER and A. Brooks. 2023. MCR LTER: Coral Reef: Long-term Population and Community Dynamics: Fishes, ongoing since 2005 ver 62. Environmental Data Initiative. https://doi.org/10.6073/pasta/75644add7e7f90c568bf5045264d359a (Accessed 2024-02-17)."),
+                       p("The example dataset showcases the various functions of the app, including biodiversity measures such as Shannon's index and more."),
+                       p("It includes a time series analysis and a map visualization for the Moorea data, as well as taxonomic breakdown."),
+                       p("You can also upload your own biodiversity data, and the app will run biodiversity indices for you."),
+                       p("Additionally, you can perform a time series analysis on a given measure of your data.")
+                ),
+                fluidRow(
+                  column(12,
+                         img(src = "shinyapp_pic.jpg", height = 600, width = 700, style = "display: block; margin: 0 auto;")
+                  )
+                )
+              )
+      ),
       tabItem(tabName = "data_input", fluidRow(
         column(12, 
                h3("Data Input"),
