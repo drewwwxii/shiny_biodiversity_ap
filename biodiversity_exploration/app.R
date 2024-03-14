@@ -36,9 +36,11 @@ ui <- dashboardPage(
                p("Additionally, you can perform a time series analysis on a given measure of your data.")
         )
       )),
+      # UI modification for data input tab
       tabItem(tabName = "data_input", fluidRow(
         column(12, 
                h3("Data Input"),
+               verbatimTextOutput("upload_instructions"), # Display upload instructions here
                helpText("Upload your biodiversity data file and perform various analyses."),
                fileInput("file", "Upload Data", accept = c(".csv", ".txt")),
                actionButton("generate_taxonomic", "Generate Taxonomic Breakdown"),
@@ -47,13 +49,11 @@ ui <- dashboardPage(
                actionButton("generate_berger_parker", "Calculate Berger-Parker Index"),
                br(),
                textOutput("uploaded_biodiversity_info"), # Display uploaded biodiversity info here
-               dataTableOutput("uploaded_taxonomic_table"), # Display uploaded taxonomic breakdown here
-               selectInput("user_time_series_type", "Time Series:",
-                           choices = c("Species Richness", "Shannon's Diversity Index", "Simpson's Diversity Index", "Berger-Parker Index"),
-                           selected = "Species Richness"),
-               plotOutput("user_time_series_plot") # Display time series plot based on uploaded user data here
+               dataTableOutput("uploaded_taxonomic_table") # Display uploaded taxonomic breakdown here
         )
       )),
+      
+    
       # UI modification
       tabItem(tabName = "biodiversity", fluidRow(
         column(12, 
@@ -112,6 +112,14 @@ server <- function(input, output, session) {
   
 options(shiny.maxRequestSize = 20 * 1024^2) # Set maximum request size to 20 MB 
   
+  # Define instructions for data upload
+  output$upload_instructions <- renderText({
+    "Please upload your biodiversity data file in CSV or TXT format. The file should have the following columns:\n
+  - 'Taxonomy': Contains the species name.\n
+  - 'Count': Contains the observations of the given species.\n
+  - 'Year': Contains the year each observation was collected in.\n
+  Ensure that the file contains no missing values in these columns."
+  })  
   
 # Reactive expression to read the uploaded dataset
 uploaded_dataset <- reactive({
@@ -247,8 +255,6 @@ output$user_time_series_plot <- renderPlot({
            y = input$user_time_series_type)
   }
 })
-
-
 
 
 
