@@ -47,7 +47,11 @@ ui <- dashboardPage(
                actionButton("generate_berger_parker", "Calculate Berger-Parker Index"),
                br(),
                textOutput("uploaded_biodiversity_info"), # Display uploaded biodiversity info here
-               dataTableOutput("uploaded_taxonomic_table") # Display uploaded taxonomic breakdown here
+               dataTableOutput("uploaded_taxonomic_table"), # Display uploaded taxonomic breakdown here
+               selectInput("user_time_series_type", "Time Series:",
+                           choices = c("Species Richness", "Shannon's Diversity Index", "Simpson's Diversity Index", "Berger-Parker Index"),
+                           selected = "Species Richness"),
+               plotOutput("user_time_series_plot") # Display time series plot based on uploaded user data here
         )
       )),
       # UI modification
@@ -71,8 +75,8 @@ ui <- dashboardPage(
       )),
       tabItem(tabName = "map", fluidRow(
         column(12, 
-               h3("Moorea LTER Site Map Here"),
-               helpText("A site map of the locations of the various sites that data was collected from."),
+               h3("Moorea LTER Site Map"),
+               helpText("A map of the locations of the various sites that data was collected from."),
                leafletOutput("map")
         )
       )),
@@ -183,6 +187,71 @@ output$uploaded_taxonomic_table <- renderDataTable({
   uploaded_taxonomic_breakdown
 })
 })
+
+# Reactive expression to read the uploaded dataset
+uploaded_dataset <- reactive({
+  req(input$file)  # Require a file to be uploaded
+  read.csv(input$file$datapath)
+})
+
+# Define reactive expression for time series analysis based on uploaded user data
+user_time_series <- reactive({
+  # Access dataset with reactive expression
+  user_data <- uploaded_dataset()
+  
+  # Convert year to numeric to ensure correct plotting
+  user_data$Year <- as.numeric(user_data$Year)
+  
+  # Aggregate species count by year based on selected time series type
+  if (input$user_time_series_type == "Species Richness") {
+    return(aggregate(Taxonomy ~ Year, data = user_data, FUN = function(x) length(unique(x))))
+  } else {
+    # Aggregate species abundance data by year
+    species_counts <- user_data %>%
+      group_by(Year, Taxonomy) %>%
+      summarize(Count = sum(Count)) %>%
+      ungroup()
+    
+    # Calculate the selected biodiversity index for each year
+    if (input$user_time_series_type == "Shannon's Diversity Index") {
+      return(species_counts %>%
+               group_by(Year) %>%
+               summarize(Index = diversity(Count, index = "shannon")))
+    } else if (input$user_time_series_type == "Simpson's Diversity Index") {
+      return(species_counts %>%
+               group_by(Year) %>%
+               summarize(Index = diversity(Count, index = "simpson")))
+    } else if (input$user_time_series_type == "Berger-Parker Index") {
+      return(species_counts %>%
+               group_by(Year) %>%
+               summarize(Index = max(Count) / sum(Count)))
+    }
+  }
+})
+
+# Render the time series plot based on the selected time series type
+output$user_time_series_plot <- renderPlot({
+  time_series_data <- user_time_series()
+  
+  if (input$user_time_series_type == "Species Richness") {
+    ggplot(time_series_data, aes(x = Year, y = Taxonomy)) +
+      geom_line() +
+      labs(title = "Species Richness Over Time",
+           x = "Year",
+           y = "Species Richness")
+  } else {
+    ggplot(time_series_data, aes(x = Year, y = Index)) +
+      geom_line() +
+      labs(title = paste(input$user_time_series_type, "Over Time"),
+           x = "Year",
+           y = input$user_time_series_type)
+  }
+})
+
+
+
+
+
   
   # Define reactive expression to load the original dataset
   original_dataset <- reactive({
