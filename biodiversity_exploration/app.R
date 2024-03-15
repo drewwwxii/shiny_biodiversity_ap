@@ -18,8 +18,7 @@ ui <- dashboardPage(
       menuItem("Biodiversity Measures", tabName = "biodiversity", icon = icon("leaf")),
       menuItem("Taxonomic Breakdown", tabName = "taxonomic", icon = icon("list")),
       menuItem("Time Series Analysis", tabName = "time_series", icon = icon("calendar-alt")), 
-      menuItem("Data Input", tabName = "data_input", icon = icon("upload")),
-      menuItem("User Guidance", tabName = "guidance", icon = icon("question-circle"))
+      menuItem("Data Input", tabName = "data_input", icon = icon("upload"))
     )
   ),
   dashboardBody(
@@ -28,6 +27,7 @@ ui <- dashboardPage(
               fluidRow(
                 column(12, 
                        h3("Welcome to Biodiversity Explorer!"),
+                       helpText("By Andrew Palacios"),
                        verbatimTextOutput("home_text"),
                 ),
                 fluidRow(
@@ -96,12 +96,6 @@ ui <- dashboardPage(
                h3("Moorea LTER Data"),
                helpText("A preview of what the example dataset contains."), 
                tableOutput("example_table")
-        )
-      )),
-      tabItem(tabName = "guidance", fluidRow(
-        column(12, 
-               h3("User Guidance"),
-               p("This tab provides guidance on using the application.")
         )
       ))
     )
@@ -472,7 +466,8 @@ output$biodiversity_definitions <- renderText({
     if (input$time_series_type == "Species Richness") {
       ggplot(time_series_data, aes(x = Year, y = Taxonomy)) +
         geom_line() +
-        labs(x = "Year", y = "Species Richness") +
+        labs(title = "Species Richness Over Time",
+          x = "Year", y = "Species Richness") +
         theme_minimal()
     } else if (input$time_series_type == "Shannon's Diversity Index") {
       shannons_data <- shannons_time_series()
